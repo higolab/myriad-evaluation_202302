@@ -1,0 +1,199 @@
+{{
+	def is_oracle:
+		env.variant | startswith("oraclelinux")
+	;
+	def oracle_version:
+		env.variant | ltrimstr("oraclelinux")
+-}}
+{{
+	def is_debian:
+		is_oracle | not
+	;
+	def is_debian_slim:
+		is_debian and (env.variant | startswith("slim-"))
+	;
+	def debian_suite:
+		env.variant | ltrimstr("slim-")
+-}}
+{{
+	if is_oracle then (
+-}}
+FROM oraclelinux:{{ oracle_version }}-slim
+
+RUN set -eux; \
+{{ if oracle_version == "7" then ( -}}
+	yum install -y --setopt=skip_missing_names_on_install=False \
+{{ ) else ( -}}
+	microdnf install \
+{{ ) end -}}
+		gzip \
+		tar \
+		\
+		binutils \
+		freetype fontconfig \
+	; \
+{{ if oracle_version == "7" then ( -}}
+	rm -rf /var/cache/yum
+{{ ) else ( -}}
+	microdnf clean all
+{{ ) end -}}
+
+ENV JAVA_HOME /usr/java/openjdk-{{ env.version }}
+{{
+	) else (
+-}}
+FROM {{
+	if is_debian_slim then
+		"debian:" + debian_suite + "-slim"
+	else
+		"buildpack-deps:" + debian_suite + "-scm"
+	end
+}}
+
+RUN set -eux; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+{{ if is_debian_slim then "" else ( -}}
+		bzip2 \
+		unzip \
+		xz-utils \
+		\
+		binutils \
+		\
+		fontconfig libfreetype6 \
+		\
+{{ ) end -}}
+		ca-certificates p11-kit \
+	; \
+	rm -rf /var/lib/apt/lists/*
+
+ENV JAVA_HOME /usr/local/openjdk-{{ env.version }}
+{{
+	) end
+-}}
+ENV PATH $JAVA_HOME/bin:$PATH
+
+ENV LANG {{ if is_oracle and oracle_version == "7" then "en_US.UTF-8" else "C.UTF-8" end }}
+
+{{ def java_version: .version }}
+ENV JAVA_VERSION {{ java_version }}
+
+{{ def javaType: "jdk" }}
+
+{{
+	def arches: .[env.javaType].arches
+	;
+	def get_arch_command:
+		if is_oracle then
+			"objdump=\"$(command -v objdump)\" && objdump --file-headers \"$objdump\" | awk -F '[:,]+[[:space:]]+' '$1 == \"architecture\" { print $2 }'"
+		else
+			"dpkg --print-architecture"
+		end
+	;
+	def case_arch:
+		. as $bashbrewArch
+		| if is_oracle then {
+			amd64: "i386:x86-64",
+			arm64v8: "aarch64",
+		} else {
+			amd64: "amd64",
+			arm64v8: "arm64",
+		} end
+		| .[$bashbrewArch] // error("unsupported bashbrew architecture: " + $bashbrewArch)
+		| @sh
+	;
+	def wget_command:
+		if is_oracle then
+			"curl -fL -o"
+		else
+			[
+				"wget",
+				"--progress=dot:giga",
+				"-O"
+			] | join(" ")
+		end
+-}}
+RUN set -eux; \
+	\
+	arch="$({{ get_arch_command }})"; \
+	case "$arch" in \
+{{
+	[
+		arches | to_entries[]
+		| select(.key | startswith("windows-") | not)
+		| .key as $bashbrewArch | .value
+		| (
+-}}
+		{{ $bashbrewArch | case_arch }}) \
+			downloadUrl={{ .url | @sh }}; \
+{{ if .sha256 then ( -}}
+			downloadSha256={{ .sha256 | @sh }}; \
+{{ ) else "" end -}}
+			;; \
+{{
+		)
+	] | add
+-}}
+		*) echo >&2 "error: unsupported architecture: '$arch'"; exit 1 ;; \
+	esac; \
+	\
+{{ if is_debian_slim then ( -}}
+	savedAptMark="$(apt-mark showmanual)"; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		wget \
+	; \
+	rm -rf /var/lib/apt/lists/*; \
+	\
+{{ ) else "" end -}}
+	{{ wget_command }} openjdk.tgz "$downloadUrl"; \
+{{ if [ arches[] ] | any(has("sha256")) then ( -}}
+	echo "$downloadSha256 *openjdk.tgz" | sha256sum --strict --check -; \
+{{ ) else "" end -}}
+	\
+	mkdir -p "$JAVA_HOME"; \
+	tar --extract \
+		--file openjdk.tgz \
+		--directory "$JAVA_HOME" \
+		--strip-components 1 \
+		--no-same-owner \
+	; \
+	rm openjdk.tgz*; \
+	\
+{{ if is_debian_slim then ( -}}
+	apt-mark auto '.*' > /dev/null; \
+	[ -z "$savedAptMark" ] || apt-mark manual $savedAptMark > /dev/null; \
+	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
+	\
+{{ ) else "" end -}}
+{{ if is_oracle then ( -}}
+	rm -rf "$JAVA_HOME/lib/security/cacerts"; \
+	ln -sT /etc/pki/ca-trust/extracted/java/cacerts "$JAVA_HOME/lib/security/cacerts"; \
+	\
+	ln -sfT "$JAVA_HOME" /usr/java/default; \
+	ln -sfT "$JAVA_HOME" /usr/java/latest; \
+	for bin in "$JAVA_HOME/bin/"*; do \
+		base="$(basename "$bin")"; \
+		[ ! -e "/usr/bin/$base" ]; \
+		alternatives --install "/usr/bin/$base" "$base" "$bin" 20000; \
+	done; \
+{{ ) else ( -}}
+	{ \
+		echo '#!/usr/bin/env bash'; \
+		echo 'set -Eeuo pipefail'; \
+		echo 'trust extract --overwrite --format=java-cacerts --filter=ca-anchors --purpose=server-auth "$JAVA_HOME/lib/security/cacerts"'; \
+	} > /etc/ca-certificates/update.d/docker-openjdk; \
+	chmod +x /etc/ca-certificates/update.d/docker-openjdk; \
+	/etc/ca-certificates/update.d/docker-openjdk; \
+	\
+	find "$JAVA_HOME/lib" -name '*.so' -exec dirname '{}' ';' | sort -u > /etc/ld.so.conf.d/docker-openjdk.conf; \
+	ldconfig; \
+{{ ) end -}}
+	\
+	java -Xshare:dump; \
+	\
+	fileEncoding="$(echo 'System.out.println(System.getProperty("file.encoding"))' | jshell -s -)"; [ "$fileEncoding" = 'UTF-8' ]; rm -rf ~/.java; \
+	javac --version; \
+	java --version
+
+CMD ["jshell"]

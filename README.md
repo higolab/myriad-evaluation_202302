@@ -28,5 +28,9 @@
     - Dockerfile：被験者が作成する対象となるDockerfile
     - index.html：作成したコンテナが内部で持つhtmlファイル
 
-## [比較対象](https://github.com/docker-library/openjdk/tree/4310f07d73b56b8fe43afac20ce9bc42ee03f11f)
-保守性実験と可読性実験における比較対象は[Open JDKプロジェクト](https://github.com/docker-library/openjdk/tree/4310f07d73b56b8fe43afac20ce9bc42ee03f11f)を参照
+## [比較対象](./template_processor)
+本比較対象は[Docker HubのOpenJDKプロジェクト](https://github.com/docker-library/openjdk/tree/4310f07d73b56b8fe43afac20ce9bc42ee03f11f)を評価用に改変したものである．
+- apply-templates.sh：versions.shからデータを取得し，テンプレートファイルへの適用，Dockerfileの生成を行うシェルスクリプト
+- Dockerfile-linux.template：Linuxベースのテンプレートファイル
+- Dockerfile-windows.template：WindowsServerベースのテンレートファイル
+- versions.sh：各種Dockerfileに適用するデータを含めたファイル

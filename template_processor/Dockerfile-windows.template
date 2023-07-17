@@ -1,0 +1,85 @@
+FROM mcr.microsoft.com/windows/{{ env.windowsVariant }}:{{ env.windowsRelease }}
+
+{{ if env.windowsVariant == "servercore" then ( -}}
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+RUN Write-Host 'Enabling TLS 1.2 (https://githubengineering.com/crypto-removal-notice/) ...'; \
+	$tls12RegBase = 'HKLM:\\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2'; \
+	if (Test-Path $tls12RegBase) { throw ('"{0}" already exists!' -f $tls12RegBase) }; \
+	New-Item -Path ('{0}/Client' -f $tls12RegBase) -Force; \
+	New-Item -Path ('{0}/Server' -f $tls12RegBase) -Force; \
+	New-ItemProperty -Path ('{0}/Client' -f $tls12RegBase) -Name 'DisabledByDefault' -PropertyType DWORD -Value 0 -Force; \
+	New-ItemProperty -Path ('{0}/Client' -f $tls12RegBase) -Name 'Enabled' -PropertyType DWORD -Value 1 -Force; \
+	New-ItemProperty -Path ('{0}/Server' -f $tls12RegBase) -Name 'DisabledByDefault' -PropertyType DWORD -Value 0 -Force; \
+	New-ItemProperty -Path ('{0}/Server' -f $tls12RegBase) -Name 'Enabled' -PropertyType DWORD -Value 1 -Force; \
+	Write-Host 'Complete.'
+
+ENV JAVA_HOME C:\\openjdk-{{ env.version }}
+RUN $newPath = ('{0}\bin;{1}' -f $env:JAVA_HOME, $env:PATH); \
+	Write-Host ('Updating PATH: {0}' -f $newPath); \
+	setx /M PATH $newPath; \
+	Write-Host 'Complete.'
+{{ ) else ( -}}
+SHELL ["cmd", "/s", "/c"]
+
+ENV JAVA_HOME C:\\openjdk-{{ env.version }}
+USER ContainerAdministrator
+RUN echo Updating PATH: %JAVA_HOME%\bin;%PATH% \
+	&& setx /M PATH %JAVA_HOME%\bin;%PATH% \
+	&& echo Complete.
+USER ContainerUser
+{{ ) end -}}
+
+ENV JAVA_VERSION {{ .version }}
+{{ if env.windowsVariant == "servercore" then ( -}}
+{{ # TODO $env:PROCESSOR_ARCHITECTURE for arm64v8 someday (https://superuser.com/a/1441469/101945) -}}
+ENV JAVA_URL {{ .[env.javaType].arches["windows-amd64"].url }}
+{{ if .[env.javaType].arches["windows-amd64"] | has("sha256") then ( -}}
+ENV JAVA_SHA256 {{ .[env.javaType].arches["windows-amd64"].sha256 }}
+{{ ) else "" end -}}
+{{ ) else "" end -}}
+
+{{ if env.windowsVariant == "servercore" then ( -}}
+RUN Write-Host ('Downloading {0} ...' -f $env:JAVA_URL); \
+	[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; \
+	Invoke-WebRequest -Uri $env:JAVA_URL -OutFile 'openjdk.zip'; \
+{{ if .[env.javaType].arches["windows-amd64"] | has("sha256") then ( -}}
+	Write-Host ('Verifying sha256 ({0}) ...' -f $env:JAVA_SHA256); \
+	if ((Get-FileHash openjdk.zip -Algorithm sha256).Hash -ne $env:JAVA_SHA256) { \
+		Write-Host 'FAILED!'; \
+		exit 1; \
+	}; \
+{{ ) else ( -}}
+
+{{ ) end -}}
+	\
+	Write-Host 'Expanding ...'; \
+	New-Item -ItemType Directory -Path C:\temp | Out-Null; \
+	Expand-Archive openjdk.zip -DestinationPath C:\temp; \
+	Move-Item -Path C:\temp\* -Destination $env:JAVA_HOME; \
+	Remove-Item C:\temp; \
+	\
+	Write-Host 'Removing ...'; \
+	Remove-Item openjdk.zip -Force; \
+	\
+	Write-Host 'Verifying install ...'; \
+{{ if env.javaType == "jdk" then ( -}}
+	Write-Host '  javac --version'; javac --version; \
+{{ ) else "" end -}}
+	Write-Host '  java --version'; java --version; \
+	\
+	Write-Host 'Complete.'
+{{ ) else ( -}}
+COPY --from=openjdk:{{ .version | gsub("[+]"; "-") }}-{{ env.javaType }}-windowsservercore-{{ env.windowsRelease }} $JAVA_HOME $JAVA_HOME
+
+RUN echo Verifying install ... \
+{{ if env.javaType == "jdk" then ( -}}
+	&& echo   javac --version && javac --version \
+{{ ) else "" end -}}
+	&& echo   java --version && java --version \
+	&& echo Complete.
+{{ ) end -}}
+{{ if env.javaType == "jdk" then ( -}}
+
+CMD ["jshell"]
+{{ ) else "" end -}}
