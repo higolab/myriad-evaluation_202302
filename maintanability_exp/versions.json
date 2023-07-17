@@ -1,0 +1,92 @@
+{
+  "18": {
+    "jdk": {
+      "arches": {
+        "amd64": {
+          "sha256": "3bfdb59fc38884672677cebca9a216902d87fe867563182ae8bc3373a65a2ebd",
+          "url": "https://download.java.net/java/GA/jdk18.0.2.1/db379da656dc47308e138f21b33976fa/1/GPL/openjdk-18.0.2.1_linux-x64_bin.tar.gz"
+        },
+        "arm64v8": {
+          "sha256": "79900237a5912045f8c9f1065b5204a474803cbbb4d075ab9620650fb75dfc1b",
+          "url": "https://download.java.net/java/GA/jdk18.0.2.1/db379da656dc47308e138f21b33976fa/1/GPL/openjdk-18.0.2.1_linux-aarch64_bin.tar.gz"
+        },
+        "windows-amd64": {
+          "sha256": "fc08052175eb2f66cedfcca368ab5d51c55f50d6f440b124e4512499825cb7b1",
+          "url": "https://download.java.net/java/GA/jdk18.0.2.1/db379da656dc47308e138f21b33976fa/1/GPL/openjdk-18.0.2.1_windows-x64_bin.zip"
+        }
+      }
+    },
+    "variants": [
+      "oraclelinux:8",
+      "oraclelinux:7",
+      "bullseye",
+      "slim-bullseye",
+      "buster",
+      "slim-buster",
+      "windows/servercore:ltsc2022",
+      "windows/servercore:1809",
+      "windows/nanoserver:1809"
+    ],
+    "version": "18.0.2.1"
+  },
+  "20": {
+    "jdk": {
+      "arches": {
+        "amd64": {
+          "sha256": "3269ddcaa2745f47e0610531a0c6f06671f7b85fd4c02ae4a29a6f14089748a6",
+          "url": "https://download.java.net/java/early_access/jdk20/31/GPL/openjdk-20-ea+31_linux-x64_bin.tar.gz"
+        },
+        "arm64v8": {
+          "sha256": "6ee53148820a0f603ef492aa7c62154c043cf38cea3259581a79010d8297c2f5",
+          "url": "https://download.java.net/java/early_access/jdk20/31/GPL/openjdk-20-ea+31_linux-aarch64_bin.tar.gz"
+        },
+        "windows-amd64": {
+          "sha256": "53634b3b58712f001ec6bb781bd4b23e1032f57a48f69fe0beb74a09317ff40a",
+          "url": "https://download.java.net/java/early_access/jdk20/31/GPL/openjdk-20-ea+31_windows-x64_bin.zip"
+        }
+      }
+    },
+    "variants": [
+      "oraclelinux:8",
+      "oraclelinux:7",
+      "bullseye",
+      "slim-bullseye",
+      "buster",
+      "slim-buster",
+      "windows/servercore:ltsc2022",
+      "windows/servercore:1809",
+      "windows/nanoserver:1809"
+    ],
+    "version": "20-ea+31"
+  },
+  "21": {
+    "jdk": {
+      "arches": {
+        "amd64": {
+          "sha256": "2dba614859e77c261a7a30b3019b05dc1e7b5651d065de741426ea540a4ba264",
+          "url": "https://download.java.net/java/early_access/jdk21/5/GPL/openjdk-21-ea+5_linux-x64_bin.tar.gz"
+        },
+        "arm64v8": {
+          "sha256": "621f8196ad96481076d3730496db77ff154976c81798fc7ff3064cd1deeacdb8",
+          "url": "https://download.java.net/java/early_access/jdk21/5/GPL/openjdk-21-ea+5_linux-aarch64_bin.tar.gz"
+        },
+        "windows-amd64": {
+          "sha256": "c9fbb10f642e2256f652d9ae955c0ddf2888348ac952217d005d85703711d602",
+          "url": "https://download.java.net/java/early_access/jdk21/5/GPL/openjdk-21-ea+5_windows-x64_bin.zip"
+        }
+      }
+    },
+    "variants": [
+      "oraclelinux:8",
+      "oraclelinux:7",
+      "bullseye",
+      "slim-bullseye",
+      "buster",
+      "slim-buster",
+      "windows/servercore:ltsc2022",
+      "windows/servercore:1809",
+      "windows/nanoserver:1809"
+    ],
+    "version": "21-ea+5"
+  }
+}

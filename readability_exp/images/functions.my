@@ -1,0 +1,88 @@
+downloadForDebian(urlAmd, shaAmd, urlArm, shaArm) {
+    case "$arch" in \
+        'amd64') \
+            downloadUrl='${urlAmd}'; \
+            downloadSha256='${shaAmd}'; \
+            ;; \
+        'arm64') \
+            downloadUrl='${urlArm}'; \
+            downloadSha256='${shaArm}'; \
+            ;; \
+        *) echo >&2 "error: unsupported architecture: '$arch'"; exit 1 ;; \
+    esac;
+}
+
+downloadForDebianPerVersion() {
+    if (version == "18") {
+        downloadForDebian("https://download.java.net/java/GA/jdk18.0.2.1/db379da656dc47308e138f21b33976fa/1/GPL/openjdk-18.0.2.1_linux-x64_bin.tar.gz",
+                          "3bfdb59fc38884672677cebca9a216902d87fe867563182ae8bc3373a65a2ebd",
+                          "https://download.java.net/java/GA/jdk18.0.2.1/db379da656dc47308e138f21b33976fa/1/GPL/openjdk-18.0.2.1_linux-aarch64_bin.tar.gz",
+                          "79900237a5912045f8c9f1065b5204a474803cbbb4d075ab9620650fb75dfc1b")
+    } else if (version == "20") {
+        downloadForDebian("https://download.java.net/java/early_access/jdk20/30/GPL/openjdk-20-ea+30_linux-x64_bin.tar.gz",
+                          "07b5d85ab1263aa1204c5c03ba27c2184cba75c80fb966ff361640f451d8c1c2",
+                          "https://download.java.net/java/early_access/jdk20/30/GPL/openjdk-20-ea+30_linux-aarch64_bin.tar.gz",
+                          "18f7e42c0779deda7e49d001254fa146c123a0016d2a7b938540d4802df92b5a")
+    } else if (version == "21") {
+        downloadForDebian("https://download.java.net/java/early_access/jdk21/4/GPL/openjdk-21-ea+4_linux-x64_bin.tar.gz",
+                          "b0b66696997381f01795b6c1b7fcd9eb54369ec5603ae627f77cdadf00e13432",
+                          "https://download.java.net/java/early_access/jdk21/4/GPL/openjdk-21-ea+4_linux-aarch64_bin.tar.gz",
+                          "17592e76ae98f20777ab47e086d420ae2cd937e62d6ff9cc49619b673a5bc9e8")
+    }
+}
+
+downloadForOracle(urlX, shaX, urlAarch, shaAarch) {
+    case "$arch" in \
+        'i386:x86-64') \
+            downloadUrl='${urlX}'; \
+            downloadSha256='${shaX}'; \
+            ;; \
+        'aarch64') \
+            downloadUrl='${urlAarch}'; \
+            downloadSha256='${shaAarch}'; \
+            ;; \
+        *) echo >&2 "error: unsupported architecture: '$arch'"; exit 1 ;; \
+    esac; \
+}
+
+downloadForOraclePerVersion() {
+    if (version == "18") {
+        downloadForOracle("https://download.java.net/java/GA/jdk18.0.2.1/db379da656dc47308e138f21b33976fa/1/GPL/openjdk-18.0.2.1_linux-x64_bin.tar.gz",
+                          "3bfdb59fc38884672677cebca9a216902d87fe867563182ae8bc3373a65a2ebd",
+                          "https://download.java.net/java/GA/jdk18.0.2.1/db379da656dc47308e138f21b33976fa/1/GPL/openjdk-18.0.2.1_linux-aarch64_bin.tar.gz",
+                          "79900237a5912045f8c9f1065b5204a474803cbbb4d075ab9620650fb75dfc1b")
+    } else if (version == "20") {
+        downloadForOracle("https://download.java.net/java/early_access/jdk20/30/GPL/openjdk-20-ea+30_linux-x64_bin.tar.gz",
+                          "07b5d85ab1263aa1204c5c03ba27c2184cba75c80fb966ff361640f451d8c1c2",
+                          "https://download.java.net/java/early_access/jdk20/30/GPL/openjdk-20-ea+30_linux-aarch64_bin.tar.gz",
+                          "18f7e42c0779deda7e49d001254fa146c123a0016d2a7b938540d4802df92b5a")
+    } else if (version == "21") {
+        downloadForOracle("https://download.java.net/java/early_access/jdk21/4/GPL/openjdk-21-ea+4_linux-x64_bin.tar.gz",
+                          "b0b66696997381f01795b6c1b7fcd9eb54369ec5603ae627f77cdadf00e13432",
+                          "https://download.java.net/java/early_access/jdk21/4/GPL/openjdk-21-ea+4_linux-aarch64_bin.tar.gz",
+                          "17592e76ae98f20777ab47e086d420ae2cd937e62d6ff9cc49619b673a5bc9e8")
+    }
+}
+
+downloadForWindowsPerVersion() {
+    if (version == "18") {
+        ENV JAVA_URL https://download.java.net/java/GA/jdk18.0.2.1/db379da656dc47308e138f21b33976fa/1/GPL/openjdk-18.0.2.1_windows-x64_bin.zip
+        ENV JAVA_SHA256 fc08052175eb2f66cedfcca368ab5d51c55f50d6f440b124e4512499825cb7b1
+    } else if (version == "20") {
+        ENV JAVA_URL https://download.java.net/java/early_access/jdk20/30/GPL/openjdk-20-ea+30_windows-x64_bin.zip
+        ENV JAVA_SHA256 47d9c36e47e2193d1c4c003f67b15c5f63cbac6507cefb7ef4adfd46203b2f49
+    } else if (version == "21") {
+        ENV JAVA_URL https://download.java.net/java/early_access/jdk21/4/GPL/openjdk-21-ea+4_windows-x64_bin.zip
+        ENV JAVA_SHA256 9d343a4d8986f8291ed65dc1a3eb1ebe6c674ba0e969f003989020e9a8484108
+    }
+}
+
+registerJavaVersion() {
+    if (version == "18") {
+        ENV JAVA_VERSION 18.0.2.1
+    } else if (version == "20") {
+        ENV JAVA_VERSION 20-ea+30
+    } else if (version == "21") {
+        ENV JAVA_VERSION 21-ea+4
+    }
+}

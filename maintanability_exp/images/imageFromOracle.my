@@ -1,0 +1,55 @@
+import set from "./images/functions.my"
+import envForLinux from "./images/functions.my"
+import download from "./images/functions.my"
+import fileOperation from "./images/functions.my"
+import javaConf from "./images/functions.my"
+import cmd from "./images/functions.my"
+
+package() {
+    gzip \
+    tar \
+    \
+    binutils \
+    freetype fontconfig \
+    ; \
+}
+
+imageFromOracle() {
+    FROM ${base}-slim
+    set()
+        if (base == "oraclelinux:7") {
+            yum install -y --setopt=skip_missing_names_on_install=False \
+            package()
+            rm -rf /var/cache/yum
+        } else if (base == "oraclelinux:8") {
+            microdnf install \
+            package()
+            microdnf clean all
+        }
+
+    envForLinux()
+
+    registerJavaVersion()
+
+    set()
+        \
+        arch="$(objdump="$(command -v objdump)" && objdump --file-headers "$objdump" | awk -F '[:,]+[[:space:]]+' '$1 == "architecture" { print $2 }')"; \
+        download("i386:x86-64", "aarch64")
+        \
+        curl -fL -o openjdk.tgz "$downloadUrl"; \
+        fileOperation()
+        rm -rf "$JAVA_HOME/lib/security/cacerts"; \
+        ln -sT /etc/pki/ca-trust/extracted/java/cacerts "$JAVA_HOME/lib/security/cacerts"; \
+        \
+        ln -sfT "$JAVA_HOME" /usr/java/default; \
+        ln -sfT "$JAVA_HOME" /usr/java/latest; \
+        for bin in "$JAVA_HOME/bin/"*; do \
+            base="$(basename "$bin")"; \
+            [ ! -e "/usr/bin/$base" ]; \
+            alternatives --install "/usr/bin/$base" "$base" "$bin" 20000; \
+        done; \
+        \
+        javaConf()
+    
+    cmd()
+}

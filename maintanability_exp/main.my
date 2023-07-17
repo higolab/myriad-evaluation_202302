@@ -1,0 +1,27 @@
+import imageFromDebian from "./images/imageFromDebian.my"
+import imageFromOracle from "./images/imageFromOracle.my"
+import imageFromSlimDebian from "./images/imageFromSlimDebian.my"
+import imageFromWindowsNanoServer from "./images/imageFromWindows.my"
+import imageFromWindowsServerCore from "./images/imageFromWindows.my"
+
+main(base, version, javaVersion, shaAmd, urlAmd, shaArm, urlArm, shaWin, urlWin) {
+    if (base == "bullseye") {
+        imageFromDebian()
+    } else if (base == "buster") {
+        imageFromDebian()
+    } else if (base == "oraclelinux:7") {
+        imageFromOracle()
+    } else if (base == "oraclelinux:8") {
+        imageFromOracle()
+    } else if (base == "slim-bullseye") {
+        imageFromSlimDebian()
+    } else if (base == "slim-buster") {
+        imageFromSlimDebian()
+    } else if (base == "windows/nanoserver:1809") {
+        imageFromWindowsNanoServer()
+    } else if (base == "windows/servercore:1809") {
+        imageFromWindowsServerCore()
+    } else if (base == "windows/servercore:ltsc2022") {
+        imageFromWindowsServerCore()
+    }
+}

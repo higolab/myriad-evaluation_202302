@@ -1,0 +1,47 @@
+import set from "./images/functions.my"
+import aptGetStart from "./images/functions.my"
+import aptGetEnd from "./images/functions.my"
+import envForLinux from "./images/functions.my"
+import registerJavaVersion from "./images/functions.my"
+import set from "./images/functions.my"
+import arch from "./images/functions.my"
+import downloadForDebian from "./images/functions.my"
+import wget from "./images/functions.my"
+import fileOperation from "./images/functions.my"
+import echo from "./images/functions.my"
+import javaConf from "./images/functions.my"
+import cmd from "./images/functions.my"
+
+imageFromSlimDebian() {
+    FROM debian:${base}
+    set()
+        aptGetStart()
+            ca-certificates p11-kit \
+        aptGetEnd("")
+    
+    envForLinux()
+
+    registerJavaVersion()
+
+    set()
+        \
+        arch()
+        downloadForDebian()
+        \
+        savedAptMark="$(apt-mark showmanual)"; \
+        aptGetStart()
+            wget \
+        ; \
+        aptGetEnd("; \")
+        \
+        wget()
+        fileOperation()
+        apt-mark auto '.*' > /dev/null; \
+        [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark > /dev/null; \
+        apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
+        \
+        echo()
+        javaConf()
+    
+    cmd()
+}

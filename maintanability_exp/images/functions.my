@@ -1,0 +1,94 @@
+download(firstArch, secondArch) {
+    case "$arch" in \
+        '${firstArch}') \
+            downloadUrl='${urlAmd}'; \
+            downloadSha256='${shaAmd}'; \
+            ;; \
+        '${secondArch}') \
+            downloadUrl='${urlArm}'; \
+            downloadSha256='${shaArm}'; \
+            ;; \
+        *) echo >&2 "error: unsupported architecture: '$arch'"; exit 1 ;; \
+    esac; \
+}
+
+downloadForDebian() {
+    download("amd64", "arm64")
+}
+
+registerJavaVersion() {
+    ENV JAVA_VERSION ${javaVersion}
+}
+
+fileOperation() {
+    echo "$downloadSha256 *openjdk.tgz" | sha256sum --strict --check -; \
+    \
+    mkdir -p "$JAVA_HOME"; \
+    tar --extract \
+        --file openjdk.tgz \
+        --directory "$JAVA_HOME" \
+        --strip-components 1 \
+        --no-same-owner \
+    ; \
+    rm openjdk.tgz*; \
+    \
+}
+
+javaConf() {
+    java -Xshare:dump; \
+    \
+    fileEncoding="$(echo 'System.out.println(System.getProperty("file.encoding"))' | jshell -s -)"; [ "$fileEncoding" = 'UTF-8' ]; rm -rf ~/.java; \
+    javac --version; \
+    java --version
+}
+
+echo() {
+    { \
+        echo '#!/usr/bin/env bash'; \
+        echo 'set -Eeuo pipefail'; \
+        echo 'trust extract --overwrite --format=java-cacerts --filter=ca-anchors --purpose=server-auth "$JAVA_HOME/lib/security/cacerts"'; \
+    } > /etc/ca-certificates/update.d/docker-openjdk; \
+    chmod +x /etc/ca-certificates/update.d/docker-openjdk; \
+    /etc/ca-certificates/update.d/docker-openjdk; \
+    \
+    find "$JAVA_HOME/lib" -name '*.so' -exec dirname '{}' ';' | sort -u > /etc/ld.so.conf.d/docker-openjdk.conf; \
+    ldconfig; \
+    \
+}
+
+wget() {
+    wget --progress=dot:giga -O openjdk.tgz "$downloadUrl"; \
+}
+
+set() {
+    RUN set -eux; \
+}
+
+envForLinux() {
+    ENV JAVA_HOME /usr/java/openjdk-${version}
+    ENV PATH $JAVA_HOME/bin:$PATH
+
+    if (base == "oraclelinux:7") {
+        ENV LANG en_US.UTF-8
+    } else {
+        ENV LANG C.UTF-8
+    }
+}
+
+arch() {
+    arch="$(dpkg --print-architecture)"; \
+}
+
+aptGetStart() {
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+}
+
+aptGetEnd(newLine) {
+    ; \
+    rm -rf /var/lib/apt/lists/*${newLine}
+}
+
+cmd() {
+    CMD ["jshell"]
+}
